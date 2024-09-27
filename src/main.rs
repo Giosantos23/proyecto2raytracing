@@ -1,6 +1,5 @@
 mod framebuffer;
 mod ray_intersect;
-mod sphere;
 mod color;
 mod camera;
 mod light;
@@ -8,6 +7,7 @@ mod material;
 mod cube; 
 mod grid;
 mod group;
+mod texture;
 
 
 use minifb::{ Window, WindowOptions, Key };
@@ -18,16 +18,15 @@ use std::time::{Duration, Instant};
 
 use crate::color::Color;
 use crate::ray_intersect::{Intersect, RayIntersect};
-use crate::sphere::Sphere;
-use crate::cube::Cube; 
 use crate::cube::create_tronco;
-use crate::cube::create_hoja;
 
 
 use crate::framebuffer::Framebuffer;
 use crate::camera::Camera;
 use crate::light::Light;
 use crate::material::Material;
+use crate::texture::Texture; 
+
 
 use crate::grid::Grid;
 use crate::group::Group;
@@ -201,38 +200,28 @@ fn main() {
     ).unwrap();
 
 
-    let ivory = Material::new(
-        Color::new(100, 100, 80),
-        50.0,
-        [0.6, 0.3, 0.6, 0.0],
-        0.0,
-    );
-
-    let glass = Material::new(
-        Color::new(255, 255, 255),
-        1425.0,
-        [0.0, 10.0, 0.5, 0.5],
-        0.3,
-    );
-
     let agua = Material::new(
         Color::new(0, 255, 255), // Color del piso
         500.0, // Especularidad
         [0.1, 0.5, 0.3, 0.8], // Albedo
         1.33,  // Índice de refracción
+        None,
     );
-
+    let textarena = Some(Texture::from_file("arena.png"));
     let arena = Material::new(
         Color::new(203, 189, 147), 
         1000.0, 
         [0.9, 0.5, 0.1, 0.0], 
         1.0,
+        textarena,
     );
+    let textpalmera = Some(Texture::from_file("palmeratext.png"));
     let madera = Material::new(
         Color::new(161, 102, 47), 
         500.0, 
         [0.9, 0.4, 0.1, 0.0], 
         1.0,
+        textpalmera,
 
     );
     let hoja_palmera = Material::new(
@@ -240,14 +229,12 @@ fn main() {
         0.9, 
         [0.7, 0.1, 0.1, 0.0], 
         1.0,
+        None,
     );
     
-    let oceano = Grid::create_cuadricula(6, 5, 0.3, agua,0.0, 0.0,0.0); // Ajusta los valores como desees
-    let oceano2 = Grid::create_cuadricula(4, 5, 0.3, agua, 11.0 * 0.3,0.0, 0.0); // Ajusta los valores como desees
-    let oceano3 = Grid::create_cuadricula_rotada(7, 5, 0.2, agua, 0.0, -1.0, -0.2);
-    let oceano4 = Grid::create_cuadricula_rotada(16, 5, 0.2, agua, 1.0, -1.0, -0.2);
-    let sand = Grid::create_cuadricula(6, 5, 0.3, arena, 5.0 * 0.3, 0.0, 0.0); // Desplazado en x
-    let sand2 = Grid::create_cuadricula(6, 5, 0.3, arena, 5.0 * 0.3, -1.8, 0.0); // Desplazado en x
+    let oceano = Grid::create_cuadricula(6, 5, 0.3, agua.clone(),0.0, 0.0,0.0); 
+    let oceano2 = Grid::create_cuadricula(4, 5, 0.3, agua.clone(), 11.0 * 0.3,0.0, 0.0); 
+    let sand = Grid::create_cuadricula(6, 5, 0.3, arena.clone(), 5.0 * 0.3, 0.0, 0.0); 
 
 
 //tronco palmera
@@ -312,25 +299,7 @@ fn main() {
     let hoja3 = gen_hojas(Vec3::new(-0.3, 0.0, 0.0), hoja_palmera.clone());
 
     
-    pub fn gen_calamardo(base_position: Vec3, material: Material) -> Group {
-        let base1 = create_tronco(
-            base_position + Vec3::new(3.0, 1.2, 0.0),  
-            base_position + Vec3::new(3.8, 1.3, 1.0),  
-            material.clone()
-        );
-        let base2 = create_tronco(
-            base_position + Vec3::new(3.0, 1.2, 0.0),  
-            base_position + Vec3::new(3.7, 1.5, 0.6),  
-            material.clone()
-        );
-        let mut cala = Group::new(vec![base1], Vec3::new(0.0, 0.0, 0.0));
-        cala.set_offset(base_position);
-        cala
-    }
-    let base1 = gen_calamardo(Vec3::new(-0.5, -1.38, 0.0), madera.clone());
 
-
-    let sand2 = Grid::create_cuadricula(6, 5, 0.3, arena, 5.0 * 0.3, -1.8, 0.0); // Desplazado en x
 
 
     
@@ -338,17 +307,13 @@ fn main() {
     let objects: Vec<Box<dyn RayIntersect>> = vec![
         Box::new(oceano),
         Box::new(oceano2),
-        //Box::new(oceano3),
-        //Box::new(oceano4),
         Box::new(sand),
-        Box::new(sand2),
         Box::new(palmera1),
         Box::new(palmera2),
         Box::new(palmera3),
         Box::new(hoja1),
         Box::new(hoja2),
         Box::new(hoja3),
-        Box::new(base1),
 
 
         ]; 
@@ -395,33 +360,27 @@ fn main() {
         let time_in_cycle = elapsed_time % cycle_duration;
         let day_fraction = time_in_cycle / cycle_duration; 
 
-        let sun_angle = day_fraction * 2.0 * PI; // Ángulo completo de 0 a 2π
-        let sun_radius = 10.0; // Ajusta según el tamaño de tu escena
+        let sun_angle = day_fraction * 2.0 * PI; 
+        let sun_radius = 10.0; 
         let sun_x = sun_radius * sun_angle.cos();
         let sun_y = sun_radius * sun_angle.sin();
-        let sun_z = 0.0; // Puedes ajustar esto si quieres simular una elevación
+        let sun_z = 0.0; 
 
         light.position = Vec3::new(sun_x, sun_y, sun_z);
-        // 3. Definir colores de día y noche
-        let day_color = Color::new(255, 255, 224); // Luz cálida (amarillo claro)
-        let night_color = Color::new(25, 25, 112); // Luz tenue azulada (midnight blue)
+        let day_color = Color::new(255, 255, 224); 
+        let night_color = Color::new(25, 25, 112); 
 
-        // 4. Interpolar el color de la luz
         let light_color = if day_fraction < 0.5 {
-            // Transición de día a atardecer
             let t = day_fraction / 0.5;
             day_color.interpolate(&night_color, t)
         } else {
-            // Transición de atardecer a noche
             let t = (day_fraction - 0.5) / 0.5;
             night_color.interpolate(&day_color, 1.0 - t)
         };
 
         light.color = light_color;
 
-        // 5. Ajustar la intensidad de la luz
         light.intensity = if day_fraction < 0.5 {
-            // Más intensa durante el día, disminuye hacia el atardecer
             1.0 - day_fraction * 2.0
         } else {
             0.1

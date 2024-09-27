@@ -10,9 +10,7 @@ impl Group {
         Group { elements, offset }
     }
 
-    pub fn add(&mut self, element: Box<dyn RayIntersect>) {
-        self.elements.push(element);
-    }
+
 
     pub fn set_offset(&mut self, offset: Vec3) {
         self.offset = offset;

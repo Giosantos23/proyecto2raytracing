@@ -1,5 +1,4 @@
-
-use nalgebra_glm::{Vec3, dot};
+use nalgebra_glm::{Vec3};
 use crate::ray_intersect::{RayIntersect, Intersect};
 use crate::material::Material;
 
@@ -60,7 +59,6 @@ impl RayIntersect for Cube {
             t_max = tz_max;
         }
 
-        // Calcular el punto de intersección
         let intersection_distance = t_min;
         if intersection_distance < 0.0 {
             return Intersect::empty();  // La intersección está detrás de la cámara
@@ -69,11 +67,14 @@ impl RayIntersect for Cube {
         let intersect_point = ray_origin + ray_direction * intersection_distance;
         let normal = self.compute_normal(&intersect_point);
 
+        // Convierte el punto de intersección a coordenadas UV
+
+
         Intersect {
             point: intersect_point,
             normal,
             distance: intersection_distance,
-            material: self.material.clone(),
+            material: self.material.clone(),  // Asumimos que la textura está en el material
             is_intersecting: true,
         }
     }
@@ -81,27 +82,27 @@ impl RayIntersect for Cube {
 
 impl Cube {
     fn compute_normal(&self, point: &Vec3) -> Vec3 {
-        // Determina la normal de la superficie del cubo en el punto de intersección
         if (point.x - self.min.x).abs() < 1e-4 {
-            return Vec3::new(-1.0, 0.0, 0.0);
+            Vec3::new(-1.0, 0.0, 0.0)
         } else if (point.x - self.max.x).abs() < 1e-4 {
-            return Vec3::new(1.0, 0.0, 0.0);
+            Vec3::new(1.0, 0.0, 0.0)
         } else if (point.y - self.min.y).abs() < 1e-4 {
-            return Vec3::new(0.0, -1.0, 0.0);
+            Vec3::new(0.0, -1.0, 0.0)
         } else if (point.y - self.max.y).abs() < 1e-4 {
-            return Vec3::new(0.0, 1.0, 0.0);
+            Vec3::new(0.0, 1.0, 0.0)
         } else if (point.z - self.min.z).abs() < 1e-4 {
-            return Vec3::new(0.0, 0.0, -1.0);
+            Vec3::new(0.0, 0.0, -1.0)
         } else {
-            return Vec3::new(0.0, 0.0, 1.0);
+            Vec3::new(0.0, 0.0, 1.0)
         }
     }
+    
+    // Convierte el punto de intersección 3D a coordenadas UV
+
+
 }
 
+// Crear tronco
 pub fn create_tronco(base: Vec3, top: Vec3, material: Material) -> Box<Cube> {
-    Box::new(Cube::new(base, top, material))
-}
-
-pub fn create_hoja(base: Vec3, top: Vec3, material: Material) -> Box<Cube> {
     Box::new(Cube::new(base, top, material))
 }
